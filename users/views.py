@@ -9,6 +9,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
+from django.db import transaction
 import datetime
 import re
 
@@ -314,3 +315,89 @@ def proje_durum_guncelle(request, proje_id):
             
     except Exception as e:
         return Response({'error': str(e)}, status=500)
+
+# ==============================================================
+# 👤 PROFİL EKRANI: İSTATİSTİKLER, HESAP DONDURMA VE HESAP SİLME
+# ==============================================================
+class KullaniciIstatistikleri(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        firma = request.user.firma
+
+        projeler = Proje.objects.filter(kullanici__firma=firma)
+
+        return Response({
+            'proje_sayisi': projeler.count(),
+            'cizim_sayisi': SepetKalemi.objects.filter(proje__kullanici__firma=firma).count(),
+            'teklif_sayisi': projeler.filter(durum='teklif').count(),
+            'calisan_sayisi': firma.calisanlar.count() if firma else 0,
+        })
+
+
+class HesapDondurView(APIView):
+    permission_classes = [IsAuthenticated, IsPatron]
+    throttle_classes = [UserRateThrottle]
+
+    def post(self, request):
+        firma = request.user.firma
+        if not firma:
+            return Response({"error": "Firma bulunamadı."}, status=400)
+
+        firma.abonelik_donduruldu = not firma.abonelik_donduruldu
+        firma.dondurma_tarihi = timezone.now() if firma.abonelik_donduruldu else None
+        firma.save()
+
+        if firma.abonelik_donduruldu:
+            return Response({
+                'status': 'success',
+                'message': 'Hesabınız donduruldu.',
+                'abonelik_donduruldu': True,
+                'dondurma_tarihi': firma.dondurma_tarihi
+            })
+        else:
+            return Response({
+                'status': 'success',
+                'message': 'Hesap dondurma kaldırıldı.',
+                'abonelik_donduruldu': False,
+                'dondurma_tarihi': None
+            })
+
+
+class HesapSilView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
+
+    def post(self, request):
+        user = request.user
+        firma = user.firma
+
+        girilen_firma_adi = request.data.get('firma_adi')
+
+        if not girilen_firma_adi or not str(girilen_firma_adi).strip():
+            return Response({"error": "Firma adı boş olamaz."}, status=400)
+
+        gercek_firma_adi = firma.ad if firma else None
+
+        if not gercek_firma_adi or girilen_firma_adi != gercek_firma_adi:
+            return Response({"error": "Firma adı doğrulanamadı."}, status=400)
+
+        if getattr(user, 'rol', None) == 'patron':
+            with transaction.atomic():
+                SepetKalemi.objects.filter(proje__kullanici__firma=firma).delete()
+                Proje.objects.filter(kullanici__firma=firma).delete()
+                FiyatTablosu.objects.filter(firma=firma).delete()
+                User.objects.filter(firma=firma).delete()
+                Firma.objects.filter(id=firma.id).delete()
+
+            return Response({
+                'status': 'success',
+                'message': 'Firma ve tüm verileri kalıcı olarak silindi.'
+            })
+        else:
+            user.delete()
+            return Response({
+                'status': 'success',
+                'message': 'Hesabınız kalıcı olarak silindi.'
+            })

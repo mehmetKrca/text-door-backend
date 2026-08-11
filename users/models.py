@@ -37,6 +37,9 @@ class Firma(models.Model):
     abonelik_bitis = models.DateTimeField(blank=True, null=True, verbose_name="Abonelik Bitiş")
     abonelik_aktif = models.BooleanField(default=False, verbose_name="Ödemeli Abonelik Aktif Mi?")
 
+    abonelik_donduruldu = models.BooleanField(default=False, verbose_name="Abonelik Donduruldu Mu?")
+    dondurma_tarihi = models.DateTimeField(blank=True, null=True, verbose_name="Dondurma Tarihi")
+
     class Meta:
         verbose_name = "Firma Profili"
         verbose_name_plural = "2. Müşteri Firmalar"

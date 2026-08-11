@@ -13,7 +13,10 @@ from .views import (
     proje_durum_guncelle,
     CurrentUserView,        # YENİ EKLENDİ
     ProfileUpdateView,      # YENİ EKLENDİ
-    PasswordChangeView      # YENİ EKLENDİ
+    PasswordChangeView,     # YENİ EKLENDİ
+    KullaniciIstatistikleri,
+    HesapDondurView,
+    HesapSilView
 )
 
 urlpatterns = [
@@ -38,4 +41,9 @@ urlpatterns = [
     # ABONELİK & PAYWALL ENDPOINT'LERİ
     path('abonelik-durumu/', abonelik_durumu, name='abonelik-durumu'),
     path('abonelik-baslat/', abonelik_baslat, name='abonelik-baslat'),
+
+    # 🎯 PROFİL EKRANI: İSTATİSTİKLER, HESAP DONDURMA VE HESAP SİLME
+    path('istatistikler/', KullaniciIstatistikleri.as_view(), name='istatistikler'),
+    path('hesap-dondur/', HesapDondurView.as_view(), name='hesap-dondur'),
+    path('hesap-sil/', HesapSilView.as_view(), name='hesap-sil'),
 ]
