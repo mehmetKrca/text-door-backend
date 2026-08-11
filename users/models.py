@@ -73,9 +73,15 @@ class Firma(models.Model):
 
 # 3. KULLANICILAR
 class CustomUser(AbstractUser):
+    ROL_SECENEKLERI = (
+        ('patron', 'Patron'),
+        ('usta', 'Usta'),
+    )
+
     firma = models.ForeignKey(Firma, on_delete=models.PROTECT, null=False, blank=False, related_name='calisanlar', verbose_name="Bağlı Olduğu Firma")
     telefon = models.CharField(max_length=15, blank=True, null=True, verbose_name="Kişisel Telefon")
     firma_sahibi_mi = models.BooleanField(default=False, verbose_name="Firma Sahibi Mi?")
+    rol = models.CharField(max_length=10, choices=ROL_SECENEKLERI, default='usta', verbose_name="Rol")
 
     class Meta:
         verbose_name = "Sistem Kullanıcısı"

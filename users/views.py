@@ -10,14 +10,17 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 import datetime
+import re
 
-from .models import AbonelikPaketi, Proje, SepetKalemi, FiyatTablosu, Firma 
+from .models import AbonelikPaketi, Proje, SepetKalemi, FiyatTablosu, Firma
+from .permissions import IsPatron
 
 from .serializers import (
-    UserRegisterSerializer, 
-    AbonelikPaketiSerializer, 
-    CalisanEkleSerializer, 
-    ProjeKaydetSerializer
+    UserRegisterSerializer,
+    AbonelikPaketiSerializer,
+    CalisanEkleSerializer,
+    ProjeKaydetSerializer,
+    CurrentUserSerializer
 )
 
 # --- GOOGLE İLE GİRİŞ İÇİN KÜTÜPHANELER ---
@@ -47,13 +50,13 @@ class PaketListView(generics.ListAPIView):
 class CalisanEkleView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = CalisanEkleSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsPatron]
     throttle_classes = [UserRateThrottle]
 
     def create(self, request, *args, **kwargs):
         patron = request.user
 
-        if not patron.firma_sahibi_mi:
+        if getattr(patron, 'rol', None) != 'patron':
             return Response({"error": "Bu işlemi sadece firma sahibi yapabilir."}, status=403)
 
         paket = patron.firma.paket
@@ -81,19 +84,8 @@ class CurrentUserView(APIView):
     throttle_classes = [UserRateThrottle]
 
     def get(self, request):
-        user = request.user
-        firma_adi = user.firma.ad if getattr(user, 'firma', None) else None
-        telefon = getattr(user, 'telefon', '')
-
-        return Response({
-            'id': user.id,
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'email': user.email,
-            'telefon': telefon,
-            'firma_adi': firma_adi,
-        })
+        serializer = CurrentUserSerializer(request.user)
+        return Response(serializer.data)
 
 class ProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -149,11 +141,19 @@ class PasswordChangeView(APIView):
 # ==============================================================
 # 🛡️ MÜŞTERİ ARŞİVİ (TAM FİRMA İZOLASYONU İLE VERİ KARIŞMASI ENGELLENDİ)
 # ==============================================================
+_FIYAT_ANAHTAR_RE = re.compile(r'fiyat|price|tl$', re.IGNORECASE)
+
+
+def _fiyat_alani_mi(anahtar):
+    return bool(_FIYAT_ANAHTAR_RE.search(anahtar))
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 @throttle_classes([UserRateThrottle])
 def projeleri_getir(request):
     firma = request.user.firma
+    usta_mi = getattr(request.user, 'rol', None) == 'usta'
     projeler = Proje.objects.filter(kullanici__firma=firma).order_by('-id')
 
     data = []
@@ -161,32 +161,44 @@ def projeleri_getir(request):
         kalemler = SepetKalemi.objects.filter(proje=proje)
         sepet_listesi = []
         for k in kalemler:
-            tam_item = k.detaylar if isinstance(k.detaylar, dict) else {}
+            kaynak_detay = k.detaylar if isinstance(k.detaylar, dict) else {}
+            if usta_mi:
+                tam_item = {
+                    anahtar: deger for anahtar, deger in kaynak_detay.items()
+                    if not _fiyat_alani_mi(anahtar)
+                }
+            else:
+                tam_item = dict(kaynak_detay)
+
             tam_item['id'] = k.id
             tam_item['isim'] = k.isim
             tam_item['urunTipi'] = k.urun_tipi
             tam_item['genislik'] = k.genislik
             tam_item['yukseklik'] = k.yukseklik
-            tam_item['fiyat'] = float(k.fiyat)
+            if not usta_mi:
+                tam_item['fiyat'] = float(k.fiyat)
             sepet_listesi.append(tam_item)
 
-        data.append({
+        proje_verisi = {
             'id': proje.id,
             'projeAdi': proje.proje_adi,
             'musteriTel': proje.musteri_tel,
             'teklifTarihi': proje.teklif_tarihi,
             'durum': getattr(proje, 'durum', 'teklif') or 'teklif',
-            'toplamFiyat': float(proje.toplam_fiyat),
             'sepet': sepet_listesi
-        })
-        
+        }
+        if not usta_mi:
+            proje_verisi['toplamFiyat'] = float(proje.toplam_fiyat)
+
+        data.append(proje_verisi)
+
     return JsonResponse(data, safe=False)
 
 # ==============================================================
 # 🎯 KALICI FİYAT TABLOSU GETİRME VE GÜNCELLEME APİ'Sİ
 # ==============================================================
 @api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPatron])
 @throttle_classes([UserRateThrottle])
 def fiyat_tablosu_api(request):
     user = request.user
@@ -244,7 +256,7 @@ def abonelik_durumu(request):
     })
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsPatron])
 @throttle_classes([UserRateThrottle])
 def abonelik_baslat(request):
     firma = getattr(request.user, 'firma', None)

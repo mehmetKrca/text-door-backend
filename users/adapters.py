@@ -13,5 +13,6 @@ class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):
             firma = Firma.objects.create(ad=firma_adi)
             user.firma = firma
             user.firma_sahibi_mi = True
+            user.rol = 'patron'
 
         return super().save_user(request, sociallogin, form)

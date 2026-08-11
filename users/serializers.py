@@ -47,10 +47,25 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(
             password=password,
             firma=yeni_firma,
-            firma_sahibi_mi=True, 
+            firma_sahibi_mi=True,
+            rol='patron',
             **validated_data
         )
         return user
+
+
+# ==============================================================
+# GİRİŞ YAPMIŞ KULLANICI (users/me/) SERIALIZER
+# ==============================================================
+class CurrentUserSerializer(serializers.ModelSerializer):
+    firma_adi = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'telefon', 'rol', 'firma_adi']
+
+    def get_firma_adi(self, obj):
+        return obj.firma.ad if getattr(obj, 'firma', None) else None
 
 
 # ==============================================================
@@ -79,8 +94,9 @@ class CalisanEkleSerializer(serializers.ModelSerializer):
 
         calisan = User.objects.create_user(
             password=password,
-            firma=patron.firma,     
-            firma_sahibi_mi=False,  
+            firma=patron.firma,
+            firma_sahibi_mi=False,
+            rol='usta',
             **validated_data
         )
         return calisan
