@@ -62,7 +62,7 @@ class CalisanEkleView(generics.CreateAPIView):
         paket = patron.firma.paket
         if not paket or not paket.sinirsiz_kullanici:
             limit = paket.max_kullanici if paket else 1
-            mevcut_kullanici_sayisi = patron.firma.calisanlar.count()
+            mevcut_kullanici_sayisi = patron.firma.calisanlar.exclude(pk=patron.pk).count()
             if mevcut_kullanici_sayisi >= limit:
                 return Response({"error": "Paketinizin kullanıcı limitine ulaşıldı."}, status=400)
 
