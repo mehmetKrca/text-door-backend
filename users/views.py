@@ -14,7 +14,7 @@ import datetime
 import re
 
 from .models import AbonelikPaketi, Proje, SepetKalemi, FiyatTablosu, Firma, HesapSilmeTalebi
-from .permissions import IsPatron
+from .permissions import IsPatron, AbonelikAktif
 
 from .serializers import (
     UserRegisterSerializer,
@@ -51,7 +51,7 @@ class PaketListView(generics.ListAPIView):
 class CalisanEkleView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = CalisanEkleSerializer
-    permission_classes = [IsAuthenticated, IsPatron]
+    permission_classes = [IsAuthenticated, IsPatron, AbonelikAktif]
     throttle_classes = [UserRateThrottle]
 
     def create(self, request, *args, **kwargs):
@@ -73,7 +73,7 @@ class CalisanEkleView(generics.CreateAPIView):
 class ProjeCreateView(generics.CreateAPIView):
     queryset = Proje.objects.all()
     serializer_class = ProjeKaydetSerializer
-    permission_classes = [IsAuthenticated] 
+    permission_classes = [IsAuthenticated, AbonelikAktif]
     throttle_classes = [UserRateThrottle]
 
 # ==============================================================
@@ -215,6 +215,8 @@ def fiyat_tablosu_api(request):
             return Response({})
 
     if request.method == 'POST':
+        AbonelikAktif().has_permission(request, None)
+
         firma = user.firma
         if not firma:
             firma, _ = Firma.objects.get_or_create(ad=f"{user.username} Atölyesi")
@@ -296,7 +298,7 @@ class CustomGoogleLoginView(SocialLoginView):
 # 🎯 CRM PROJE DURUMU GÜNCELLEME API UCU
 # ==============================================================
 @api_view(['PATCH', 'PUT', 'POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, AbonelikAktif])
 @throttle_classes([UserRateThrottle])
 def proje_durum_guncelle(request, proje_id):
     try:
