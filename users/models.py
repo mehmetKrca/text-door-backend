@@ -151,3 +151,17 @@ class SepetKalemi(models.Model):
 
     def __str__(self):
         return self.isim
+
+# 6. GOOGLE PLAY ZORUNLULUĞU: WEB ÜZERİNDEN HESAP SİLME TALEBİ
+class HesapSilmeTalebi(models.Model):
+    email = models.EmailField(verbose_name="E-posta Adresi")
+    aciklama = models.TextField(blank=True, null=True, verbose_name="Açıklama")
+    olusturma_tarihi = models.DateTimeField(auto_now_add=True, verbose_name="Talep Tarihi")
+    islendi_mi = models.BooleanField(default=False, verbose_name="İşlendi Mi?")
+
+    class Meta:
+        verbose_name = "Hesap Silme Talebi"
+        verbose_name_plural = "6. Hesap Silme Talepleri"
+
+    def __str__(self):
+        return f"{self.email} ({'İşlendi' if self.islendi_mi else 'Bekliyor'})"

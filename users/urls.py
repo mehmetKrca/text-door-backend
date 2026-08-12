@@ -17,7 +17,10 @@ from .views import (
     PasswordChangeView,     # YENİ EKLENDİ
     KullaniciIstatistikleri,
     HesapDondurView,
-    HesapSilView
+    HesapSilView,
+    CalisanListesiView,
+    CalisanSilView,
+    HesapSilmeTalebiView
 )
 
 urlpatterns = [
@@ -48,4 +51,11 @@ urlpatterns = [
     path('istatistikler/', KullaniciIstatistikleri.as_view(), name='istatistikler'),
     path('hesap-dondur/', HesapDondurView.as_view(), name='hesap-dondur'),
     path('hesap-sil/', HesapSilView.as_view(), name='hesap-sil'),
+
+    # 👥 PATRON: ÇALIŞAN LİSTESİ VE ÇALIŞAN SİLME
+    path('calisan-listesi/', CalisanListesiView.as_view(), name='calisan-listesi'),
+    path('calisan-sil/<int:user_id>/', CalisanSilView.as_view(), name='calisan-sil'),
+
+    # 🗑️ GOOGLE PLAY ZORUNLULUĞU: WEB ÜZERİNDEN HESAP SİLME TALEBİ
+    path('hesap-silme-talebi/', HesapSilmeTalebiView.as_view(), name='hesap-silme-talebi'),
 ]

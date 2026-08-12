@@ -13,7 +13,7 @@ from django.db import transaction
 import datetime
 import re
 
-from .models import AbonelikPaketi, Proje, SepetKalemi, FiyatTablosu, Firma
+from .models import AbonelikPaketi, Proje, SepetKalemi, FiyatTablosu, Firma, HesapSilmeTalebi
 from .permissions import IsPatron
 
 from .serializers import (
@@ -416,3 +416,68 @@ class HesapSilView(APIView):
                 'status': 'success',
                 'message': 'Hesabınız kalıcı olarak silindi.'
             })
+
+# ==============================================================
+# 👥 PATRON: ÇALIŞAN LİSTESİ VE ÇALIŞAN SİLME
+# ==============================================================
+class CalisanListesiView(APIView):
+    permission_classes = [IsAuthenticated, IsPatron]
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request):
+        firma = request.user.firma
+        calisanlar = firma.calisanlar.all().order_by('id') if firma else User.objects.none()
+
+        data = [{
+            'id': c.id,
+            'username': c.username,
+            'first_name': c.first_name,
+            'last_name': c.last_name,
+            'email': c.email,
+            'telefon': c.telefon,
+            'rol': c.rol,
+        } for c in calisanlar]
+
+        return Response(data)
+
+
+class CalisanSilView(APIView):
+    permission_classes = [IsAuthenticated, IsPatron]
+    throttle_classes = [UserRateThrottle]
+
+    def delete(self, request, user_id):
+        patron = request.user
+        hedef = User.objects.filter(id=user_id, firma=patron.firma).first()
+
+        if not hedef:
+            return Response({'status': 'error', 'message': 'Kullanıcı bulunamadı veya yetkiniz yok.'}, status=404)
+
+        if hedef.id == patron.id:
+            return Response({'status': 'error', 'message': 'Kendi hesabınızı bu ekrandan silemezsiniz, hesap silme işlemini profil ekranından yapınız.'}, status=400)
+
+        with transaction.atomic():
+            Proje.objects.filter(kullanici=hedef).update(kullanici=patron)
+            hedef.delete()
+
+        return Response({'status': 'success', 'message': 'Çalışan silindi.'}, status=200)
+
+# ==============================================================
+# 🗑️ GOOGLE PLAY ZORUNLULUĞU: WEB ÜZERİNDEN HESAP SİLME TALEBİ
+# ==============================================================
+class HesapSilmeTalebiView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [AnonRateThrottle]
+
+    def post(self, request):
+        email = request.data.get('email')
+        aciklama = request.data.get('aciklama', '')
+
+        if not email or not str(email).strip():
+            return Response({'error': 'E-posta adresi zorunludur.'}, status=400)
+
+        HesapSilmeTalebi.objects.create(email=str(email).strip(), aciklama=aciklama)
+
+        return Response({
+            'status': 'success',
+            'message': 'Hesap silme talebiniz alındı. En kısa sürede işleme alınacaktır.'
+        }, status=201)

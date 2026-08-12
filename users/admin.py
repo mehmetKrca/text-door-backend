@@ -17,7 +17,7 @@ except Exception:
     pass
 
 # Senin gerçek modellerin
-from .models import AbonelikPaketi, Firma, CustomUser, FiyatTablosu, Proje, SepetKalemi
+from .models import AbonelikPaketi, Firma, CustomUser, FiyatTablosu, Proje, SepetKalemi, HesapSilmeTalebi
 
 @admin.register(AbonelikPaketi)
 class AbonelikPaketiAdmin(admin.ModelAdmin):
@@ -60,3 +60,9 @@ class ProjeAdmin(admin.ModelAdmin):
 class SepetKalemiAdmin(admin.ModelAdmin):
     list_display = ('proje', 'isim', 'urun_tipi', 'genislik', 'yukseklik', 'fiyat')
     search_fields = ('isim', 'urun_tipi', 'proje__proje_adi')
+
+@admin.register(HesapSilmeTalebi)
+class HesapSilmeTalebiAdmin(admin.ModelAdmin):
+    list_display = ('email', 'olusturma_tarihi', 'islendi_mi')
+    list_filter = ('islendi_mi',)
+    search_fields = ('email', 'aciklama')
