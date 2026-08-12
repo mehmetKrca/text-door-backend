@@ -317,6 +317,21 @@ def proje_durum_guncelle(request, proje_id):
         return Response({'error': str(e)}, status=500)
 
 # ==============================================================
+# 🎯 CRM PROJE SİLME API UCU
+# ==============================================================
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([UserRateThrottle])
+def proje_sil(request, proje_id):
+    proje = Proje.objects.filter(id=proje_id, kullanici__firma=request.user.firma).first()
+
+    if not proje:
+        return Response({'status': 'error', 'message': 'Proje bulunamadı veya yetkiniz yok.'}, status=404)
+
+    proje.delete()
+    return Response({'status': 'success', 'message': 'Proje silindi.'}, status=200)
+
+# ==============================================================
 # 👤 PROFİL EKRANI: İSTATİSTİKLER, HESAP DONDURMA VE HESAP SİLME
 # ==============================================================
 class KullaniciIstatistikleri(APIView):

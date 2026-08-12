@@ -11,6 +11,7 @@ from .views import (
     abonelik_durumu,
     abonelik_baslat,
     proje_durum_guncelle,
+    proje_sil,
     CurrentUserView,        # YENİ EKLENDİ
     ProfileUpdateView,      # YENİ EKLENDİ
     PasswordChangeView,     # YENİ EKLENDİ
@@ -32,7 +33,8 @@ urlpatterns = [
     
     # 🎯 CRM DURUM GÜNCELLEME ENDPOINT'İ
     path('proje-durum-guncelle/<int:proje_id>/', proje_durum_guncelle, name='proje-durum-guncelle'),
-    
+    path('proje-sil/<int:proje_id>/', proje_sil, name='proje-sil'),
+
     # 🎯 YENİ: PROFİL İŞLEMLERİ (404 HATALARINI ÇÖZEN KISIM)
     path('me/', CurrentUserView.as_view(), name='current-user'),
     path('profile-update/', ProfileUpdateView.as_view(), name='profile-update'),
