@@ -64,6 +64,10 @@ class Firma(models.Model):
 
     @property
     def erisim_izni_var_mi(self):
+        # 0. Hesap dondurulmuşsa (patron tarafından) her şeyden önce erişim kapalı
+        if self.abonelik_donduruldu:
+            return False
+
         # 1. Ödemeli aktif abonelik var mı?
         if self.abonelik_aktif:
             if self.abonelik_bitis and timezone.now() > self.abonelik_bitis:
