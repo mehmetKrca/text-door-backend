@@ -253,6 +253,7 @@ def abonelik_durumu(request):
     return Response({
         'erisim_izni': getattr(firma, 'erisim_izni_var_mi', True),
         'abonelik_aktif': getattr(firma, 'abonelik_aktif', False),
+        'abonelik_donduruldu': getattr(firma, 'abonelik_donduruldu', False),
         'kalan_deneme_gunu': getattr(firma, 'kalan_deneme_gunu', 14),
         'deneme_doldu_mu': getattr(firma, 'deneme_suresi_doldu_mu', False),
         'abonelik_bitis': getattr(firma, 'abonelik_bitis', None)
