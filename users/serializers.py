@@ -36,6 +36,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             except AbonelikPaketi.DoesNotExist:
                 pass
 
+        if secilen_paket is None:
+            secilen_paket = AbonelikPaketi.objects.filter(ad='Bireysel').first()
+
         isletme_adi = firma_adi if (firma_adi and firma_adi.strip()) else f"{validated_data['username']} Atölyesi"
 
         yeni_firma = Firma.objects.create(
