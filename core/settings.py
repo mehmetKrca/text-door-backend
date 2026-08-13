@@ -5,6 +5,8 @@ Django settings for core project.
 from pathlib import Path
 from datetime import timedelta
 import environ
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,6 +21,16 @@ SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+
+# Sentry hata takibi (DSN tanımlı değilse yerel geliştirmede başlatılmaz)
+SENTRY_DSN = env('SENTRY_DSN', default='')
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=False,  # KVKK: kişisel veri Sentry'ye gönderilmesin
+    )
 
 
 # Application definition
@@ -164,8 +176,10 @@ JAZZMIN_UI_TWEAKS = {
 # ==============================================================================
 
 # React (Frontend) tarafının bu Django sunucusuna istek atabilmesi için izinler
-CORS_ALLOW_ALL_ORIGINS = True 
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['http://localhost:5173'])
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = CORS_ALLOWED_ORIGINS
 
 # REST Framework Ayarları (JWT Token ile güvenli giriş ve Hız Sınırlandırması TAM EKLENDİ)
 REST_FRAMEWORK = {
