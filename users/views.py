@@ -277,6 +277,8 @@ def abonelik_durumu(request):
         'abonelik_baslangic': getattr(firma, 'abonelik_baslangic', None),
         'abonelik_bitis': getattr(firma, 'abonelik_bitis', None),
         'paket_adi': firma.paket.ad if getattr(firma, 'paket', None) else None,
+        'abonelik_periyot': getattr(firma, 'abonelik_periyot', None),
+        'omur_boyu': getattr(firma, 'abonelik_periyot', None) == 'tek_seferlik' and getattr(firma, 'abonelik_aktif', False),
     })
 
 @api_view(['POST'])

@@ -26,9 +26,16 @@ class AbonelikPaketi(models.Model):
 
 # 2. FİRMA PROFİLLERİ (12. GÜN: PAYWALL & 14 GÜNLÜK DENEME EKLENDİ)
 class Firma(models.Model):
+    ABONELIK_PERIYOT_SECENEKLERI = (
+        ('aylik', 'Aylık'),
+        ('yillik', 'Yıllık'),
+        ('tek_seferlik', 'Tek Seferlik'),
+    )
+
     ad = models.CharField(max_length=100, verbose_name="Firma / Atölye Adı")
     paket = models.ForeignKey(AbonelikPaketi, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Kullandığı Paket")
     telefon = models.CharField(max_length=15, blank=True, null=True, verbose_name="Firma Telefonu")
+    abonelik_periyot = models.CharField(max_length=15, choices=ABONELIK_PERIYOT_SECENEKLERI, null=True, blank=True, verbose_name="Abonelik Periyodu")
     
     # --- 12. GÜN: ABONELİK & DENEME SÜRESİ ALANLARI ---
     DENEME_SURESI_GUN = 14
@@ -70,6 +77,9 @@ class Firma(models.Model):
 
         # 1. Ödemeli aktif abonelik var mı?
         if self.abonelik_aktif:
+            if self.abonelik_periyot == 'tek_seferlik':
+                return True  # Tek seferlik ödeme: ömür boyu erişim, bitiş tarihine bakılmaz
+
             if self.abonelik_bitis and timezone.now() > self.abonelik_bitis:
                 return False  # Ödenen aboneliğin süresi dolmuş
             return True  # Abonelik sorunsuz devam ediyor

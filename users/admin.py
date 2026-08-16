@@ -1,3 +1,4 @@
+from django import forms
 from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin
@@ -24,11 +25,20 @@ class AbonelikPaketiAdmin(admin.ModelAdmin):
     list_display = ('ad', 'periyot', 'fiyat', 'sinirsiz_kullanici', 'max_kullanici')
     search_fields = ('ad',)
 
+class FirmaAdminForm(forms.ModelForm):
+    class Meta:
+        model = Firma
+        fields = '__all__'
+        help_texts = {
+            'abonelik_bitis': "Tek seferlik ödemede boş bırakın, ömür boyu geçerli olur.",
+        }
+
 @admin.register(Firma)
 class FirmaAdmin(admin.ModelAdmin):
-    list_display = ('ad', 'paket', 'telefon', 'abonelik_baslangic', 'abonelik_bitis')
+    form = FirmaAdminForm
+    list_display = ('ad', 'paket', 'abonelik_periyot', 'telefon', 'abonelik_baslangic', 'abonelik_bitis')
     search_fields = ('ad', 'telefon')
-    list_filter = ('paket',)
+    list_filter = ('paket', 'abonelik_periyot')
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
