@@ -9,10 +9,11 @@ class AbonelikPaketi(models.Model):
     PERIYOT_SECENEKLERI = (
         ('Aylık', 'Aylık'),
         ('Yıllık', 'Yıllık'),
+        ('tek_seferlik', 'Tek Seferlik'),
     )
     
     ad = models.CharField(max_length=50, verbose_name="Paket Adı (Örn: Kurumsal Plus)")
-    periyot = models.CharField(max_length=10, choices=PERIYOT_SECENEKLERI, default='Aylık', verbose_name="Ödeme Periyodu")
+    periyot = models.CharField(max_length=15, choices=PERIYOT_SECENEKLERI, default='Aylık', verbose_name="Ödeme Periyodu")
     fiyat = models.DecimalField(max_digits=10, decimal_places=2, verbose_name="Fiyat (₺)")
     sinirsiz_kullanici = models.BooleanField(default=False, verbose_name="Sınırsız Kullanıcı Hakkı")
     max_kullanici = models.IntegerField(default=1, verbose_name="Maksimum Kullanıcı (Sınırsız değilse)")
